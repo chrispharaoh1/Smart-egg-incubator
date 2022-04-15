@@ -12,10 +12,14 @@
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 /*------------------------WATER LEVEL-----------------------------------------*/
+ #define DHTPIN 17
+
 
   #define DHTPIN2 16
   #define DHTTYPE DHT11   
   DHT dht(DHTPIN2, DHTTYPE);
+int lowerThreshold = 250;
+int upperThreshold = 420;
 
 // Sensor pins
 #define sensorPower 10
@@ -39,15 +43,6 @@ byte bcdToDec(byte val){
 #define buttonUp  A9
 #define buttonDown A10
 #define buttonOK A11
-
-#define buttonLoad A12
-#define buttonChick A13
-#define buttonQuil A14
-#define buttonDuck A15
-#define buttonTurk 49
-#define buttonGu 47
-//loading buttons
-
 /*----------------------------------------------------------------------------*/
 //buttons states for debouncing
   int menu = 0;
@@ -57,8 +52,6 @@ byte bcdToDec(byte val){
   bool curr_btUpState = HIGH;
   bool curr_btDownState = HIGH;
   bool curr_btOkState = HIGH;
-
-
 
   
   bool prev_btSetState = HIGH;
@@ -90,7 +83,7 @@ float maxHum;
 
 #define buzz 15
 long previousVal = millis();
-long currentVal = 50;
+long currentVal = 4000;
 /*--------------Countters for counting min and max--------------------*/
 
 int buttonPushCounter = EEPROM.read(3);   // counter for the number of button presses
@@ -121,25 +114,13 @@ void setup() {
   sensors.begin();
   dht.begin();
 
-
+  Serial1.println("AT+CNMI=2,2,0,0,0"); // AT Command to receive a live SMS
+  // Print a message to the LCD.
   
      pinMode(buttonSet,INPUT_PULLUP);
      pinMode(buttonUp,INPUT_PULLUP);
      pinMode(buttonDown,INPUT_PULLUP);
      pinMode(buttonOK,INPUT_PULLUP);
-
-
- 
-     pinMode(buttonLoad,INPUT_PULLUP);
-     pinMode(buttonChick,INPUT_PULLUP);
-     pinMode(buttonQuil,INPUT_PULLUP);
-     pinMode(buttonDuck,INPUT_PULLUP);
-     pinMode(buttonTurk,INPUT_PULLUP);
-     pinMode(buttonGu,INPUT_PULLUP);
-
-
-
-
     /*------------------------------------------------------------------------------*/
     //setting initial state of the buttons to Low
 
@@ -164,10 +145,6 @@ void setup() {
 
        digitalWrite(42,HIGH);
        digitalWrite(46,HIGH);
-
-       //relay pins initial state
-       digitalWrite(48,HIGH);
-       //digitalWrite(46,HIGH);
        Wire.begin();
 
      digitalWrite(A1,LOW);
@@ -268,24 +245,26 @@ void manageTurner(){
   readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month,
   &year);
 /*--------------------------------------------------------Turn up (turn right)--------------------------------------------------------------------------*/
-  if(minute == 1 || minute == 6 || minute == 12 || minute == 18 || minute == 24 || minute == 30 || minute == 36 || minute == 42 || minute == 48 || minute == 54){
+  if(hour == 1 || hour == 3 || hour == 5 || hour == 7 || hour == 9 || hour == 11 || hour == 13 || hour == 15 || hour == 17 || hour == 19 || hour == 21 || hour == 23){
       digitalWrite(A4,HIGH);
       digitalWrite(42,LOW);
         
-
-    } else{
+      if(minute>=10){
       digitalWrite(42,HIGH);
       digitalWrite(A4,LOW);
-      }
+      
+        }
+    }
 /*--------------------------------------------------------Turn down (turn left)--------------------------------------------------------------------------*/
-  if(minute == 3 || minute == 9 || minute == 15 || minute == 21 || minute == 27 || minute == 33 || minute == 39 || minute == 45 || minute == 51 || minute == 57){
+  if(hour == 2 || hour == 4 || hour == 6 || hour == 8 || hour == 10 || hour == 12 || hour == 14 || hour == 16 || hour == 18 || hour == 20 || hour == 22 || hour == 24){
       digitalWrite(A3,HIGH);
       digitalWrite(46,LOW);
         
-    }else{
+      if(minute>=10){
       digitalWrite(A3,LOW);
       digitalWrite(46,HIGH);
-      }
+        }
+    }
 
   }
 
@@ -301,16 +280,7 @@ void loop() {
  int menu = 0;
  int oldMenu =0;
 
-
-
-bool curr_btLoadRead = digitalRead(buttonLoad);
-bool curr_btChickRead = digitalRead(buttonChick);
-bool curr_btQuilRead = digitalRead(buttonQuil);
-bool curr_btDuckRead = digitalRead(buttonDuck);
-bool curr_btTurkRead = digitalRead(buttonTurk);
-bool curr_btGuRead = digitalRead(buttonGu);
-
-
+  
 bool b = digitalRead(buttonOK);
 bool curr_btSetRead = digitalRead(buttonSet);
 bool curr_btUpRead = digitalRead(buttonUp);
@@ -384,7 +354,7 @@ if(curr_btOkRead != prev_btOkState){
 prev_btSetState = curr_btSetRead;
   prev_btUpState = curr_btUpRead;
   prev_btDownState = curr_btDownRead;
-  prev_btOkState = curr_btOkRead; 
+prev_btOkState = curr_btOkRead; 
   
   /*--------------------returning to main screen if ok is pressed------*/
 
@@ -399,86 +369,19 @@ prev_btSetState = curr_btSetRead;
     //Serial.print(menu);
 
     }
-      //delay(50);
+      delay(50);
   }
-
-  
-  if(curr_btLoadRead != curr_btSetState && curr_btOkRead != curr_btOkState){
-   curr_btSetState = curr_btSetRead;
-   curr_btOkState = curr_btOkRead;
-  if( curr_btSetRead ==LOW && curr_btOkRead == LOW ){
-    //digitalWrite(A2,HIGH);
-    homeSreen = false;
-    menu = 1;
-    //Serial.print(menu);
-
-    }
-      //delay(50);
-  }
-
-
-//Loding
-
-     pinMode(buttonLoad,INPUT_PULLUP);
-     pinMode(buttonChick,INPUT_PULLUP);
-     pinMode(buttonQuil,INPUT_PULLUP);
-     pinMode(buttonDuck,INPUT_PULLUP);
-     pinMode(buttonTurk,INPUT_PULLUP);
-     pinMode(buttonGu,INPUT_PULLUP);
-
-
-     if(digitalRead(buttonLoad) == HIGH && digitalRead(buttonChick) == HIGH){
-        digitalWrite(39,HIGH);
-      }else{
-        digitalWrite(39,LOW);
-        }
-
-        
-     if(digitalRead(buttonLoad) == HIGH && digitalRead(buttonTurk) == HIGH){
-        digitalWrite(39,HIGH);
-      }else{
-        digitalWrite(39,LOW);
-        }
-
-         if(digitalRead(buttonLoad) == HIGH && digitalRead(buttonQuil) == HIGH){
-        digitalWrite(39,HIGH);
-      }else{
-        digitalWrite(39,LOW);
-        }
-
- if(digitalRead(buttonLoad) == HIGH && digitalRead(buttonDuck) == HIGH){
-        digitalWrite(39,HIGH);
-      }else{
-        digitalWrite(39,LOW);
-        }
- if(digitalRead(buttonLoad) == HIGH && digitalRead(buttonGu) == HIGH){
-        digitalWrite(39,HIGH);
-      }else{
-        digitalWrite(39,LOW);
-        }
-
-
-
 
   /*==============Manual turning up================*/
-  if(curr_btUpRead != curr_btUpState){
-  curr_btUpState = curr_btUpRead;
-  if( curr_btUpRead ==HIGH){
+    if(curr_btUpRead != curr_btUpState){
+   curr_btUpState = curr_btUpRead;
+  if( curr_btUpRead ==LOW){
        digitalWrite(42,HIGH);
        digitalWrite(A4,HIGH);
     }
-      //delay(50);
+      delay(50);
   }else{}
 
-  /*==============Manual turning down================*/
-  if(curr_btDownRead != curr_btDownState){
-  curr_btDownState = curr_btDownRead;
-  if( curr_btDownRead == HIGH){
-      digitalWrite(A3,HIGH);
-      digitalWrite(46,LOW);
-    }
-      //delay(50);
-  }else{}
 
 
 /*-----------------------switch cases-----------------------*/
@@ -546,6 +449,8 @@ int maxTemp = EEPROMReadMaxTemp(3);
         break;
       }
  /*-------calling other functions in main loop*/
+gsmCommands();
+autoReadWater();
 manageTurner();
 startBuzz1();
 relayLED();
@@ -615,7 +520,7 @@ float humiD = takeHumidity();
       }
 
 
-   // delay(50);
+    delay(50);
 
   }
  up_lastButtonState = up_buttonState;
@@ -654,7 +559,7 @@ float humiD = takeHumidity();
       }
 
 
-    //delay(50);
+    delay(50);
 
   }
 down_lastButtonState = down_buttonState;
@@ -695,7 +600,7 @@ down_lastButtonState = down_buttonState;
       lcd.print("  Warning: 3");
       }
 
-    //delay(50);
+    delay(50);
 
   }
  up_lastButtonState = up_buttonState;
@@ -732,7 +637,7 @@ down_lastButtonState = down_buttonState;
       lcd.print("  Warning: 4"); 
       }
 
-   // delay(50);
+    delay(50);
 
   }
 down_lastButtonState = down_buttonState;
@@ -770,7 +675,7 @@ down_lastButtonState = down_buttonState;
       lcd.print("  Warning!: 5");
       }
 
-   // delay(50);
+    delay(50);
 
   }
  up_lastButtonState = up_buttonState;
@@ -807,7 +712,7 @@ down_lastButtonState = down_buttonState;
       lcd.print(" Warning!: 6");
     }
 
-    //delay(50);
+    delay(50);
 
   }
 down_lastButtonState = down_buttonState;
@@ -844,7 +749,7 @@ if(buttonPushCounter3 < 90){
       lcd.print("  Warning!: 7"); 
   }
 
-   // delay(50);
+    delay(50);
 
   }
  up_lastButtonState = up_buttonState;
@@ -881,7 +786,7 @@ if(buttonPushCounter3 > (buttonPushCounter2+1)){
       lcd.print("  Warning!: 8  ");
   }
 
-   // delay(50);
+    delay(50);
 
   }
 down_lastButtonState = down_buttonState;
@@ -1021,7 +926,25 @@ void startBuzz(){
    float b = displayTemp();
    if(b >= EEPROM.read(3)){
     digitalWrite(A0,HIGH);
-alarm();
+if (millis() - previousVal > currentVal)
+{
+   for(int i =1; i < 2; i++){
+
+tone(buzz,1000);
+ delay(500);
+   noTone(buzz);
+  delay(500);
+    }
+  for(int i =1; i < 2; i++){
+
+  tone(buzz,1000);
+  delay(500);
+  noTone(buzz);
+  delay(500);
+    }
+previousVal = millis();
+}
+
     }else{digitalWrite(A0,LOW);}
   }
 
@@ -1030,7 +953,24 @@ void startBuzz1(){
    float b = displayTemp();
    if(b <= EEPROM.read(1)){
     digitalWrite(A0,HIGH);
-alarm();
+if (millis() - previousVal > currentVal)
+{
+   for(int i =1; i < 2; i++){
+
+tone(buzz,5);
+ delay(500);
+   noTone(buzz);
+  delay(500);
+    }
+  for(int i =1; i < 2; i++){
+
+  tone(buzz,5);
+  delay(500);
+  noTone(buzz);
+  delay(500);
+    }
+previousVal = millis();
+}
 
     }else{digitalWrite(A0,LOW);}
   }
@@ -1041,7 +981,24 @@ void startBuzz2(){
    float b = takeHumidity();
    if(b <= EEPROM.read(5)){
     digitalWrite(A0,HIGH);
-alarm();
+if (millis() - previousVal > currentVal)
+{
+   for(int i =1; i < 2; i++){
+
+tone(buzz,300);
+ delay(500);
+   noTone(buzz);
+  delay(500);
+    }
+  for(int i =1; i < 2; i++){
+
+  tone(buzz,300);
+  delay(500);
+  noTone(buzz);
+  delay(500);
+    }
+previousVal = millis();
+}
 
     }else{digitalWrite(A0,LOW);}
   }
@@ -1052,13 +1009,7 @@ void startBuzz3(){
    float b = takeHumidity();
    if(b >= EEPROM.read(7)){
     digitalWrite(A0,HIGH);
-    alarm();
-
-    }else{digitalWrite(A0,LOW);}
-  }
-
-  void alarm(){
-    if (millis() - previousVal > currentVal)
+if (millis() - previousVal > currentVal)
 {
    for(int i =1; i < 2; i++){
 
@@ -1069,14 +1020,16 @@ tone(buzz,500);
     }
   for(int i =1; i < 2; i++){
 
-  tone(buzz,500);
+  tone(buzz,300);
   delay(500);
   noTone(buzz);
   delay(500);
     }
 previousVal = millis();
 }
-    }
+
+    }else{digitalWrite(A0,LOW);}
+  }
 
   float takeHumidity(){
 
@@ -1087,38 +1040,481 @@ previousVal = millis();
     return humid;
     }
 
-   void relayLED(){
+    void relayLED(){
       float catchTemp = displayTemp();
       float catchHum = takeHumidity();
 
-      if (catchTemp <= EEPROM.read(1)+0.5){
-          digitalWrite(2,LOW); //heat1 relay
+      if (catchTemp < EEPROM.read(1)+0.5){
+          digitalWrite(2,HIGH); //heat1 relay
           digitalWrite(A1,HIGH);
-        }else{
-          digitalWrite(2,HIGH);
+
+          if(catchTemp < EEPROM.read(1)-1){
+            sendSms2();
+            }
+        }else if(catchTemp > (EEPROM.read(3)+EEPROM.read(1))/2){
+          digitalWrite(2,LOW);
           digitalWrite(A1,LOW);
           }
-       if(catchTemp >= EEPROM.read(3)-0.5){
-          digitalWrite(48,LOW); //EXHAUSE LELAY
+
+          
+       if(catchTemp > EEPROM.read(3)){
+          digitalWrite(48,HIGH); //EXHAUSE LELAY
           digitalWrite(40,HIGH);
+          
+          if(catchTemp > EEPROM.read(3)+1){ //sending sms message for high temp
+            sendSms1();
+            }else{}
+            
         }else{
-           digitalWrite(48,HIGH); //
+           digitalWrite(48,LOW); //
           digitalWrite(40,LOW);   
           }
 
-        if(catchHum <= EEPROM.read(5)*1){
-          digitalWrite(3,LOW); //WET LELAY
+        if(catchHum <= EEPROM.read(5)+2){
+          digitalWrite(3,HIGH); //WET LELAY
           digitalWrite(A5,HIGH);
           }else{
-          digitalWrite(3,HIGH); //EXHAUSE LELAY
+          digitalWrite(3,LOW); 
           digitalWrite(A5,LOW);
             }
+         if(catchHum <= EEPROM.read(5)){//sending message if humidity is too low
+          sendSms4();
+          }   
+
+          
+          if(catchHum > EEPROM.read(7)){
+          digitalWrite(48,HIGH); //EXHAUSE LELAY IF HUMIDITY IS TOO HIGH
+          digitalWrite(40,HIGH);
+            }else{
+          digitalWrite(48,LOW); 
+          digitalWrite(40,LOW); 
+              }
+
+          if(catchHum >= EEPROM.read(7)){//sending message if humidity is too low
+            sendSms3();
+          } 
 
           if(catchTemp < EEPROM.read(1)+0.5){
-          digitalWrite(5,LOW); //HEATER 2
+          digitalWrite(5,HIGH); //HEATER 2
           digitalWrite(A2,HIGH);
-          }else{
-          digitalWrite(5,HIGH); 
+          }else if(catchTemp > (EEPROM.read(3)+EEPROM.read(1))/2){
+          digitalWrite(5,LOW); 
           digitalWrite(A2,LOW);
             }
+
+                     
+          if(catchHum == -127.00){
+                noSensorSMS();
+            }else{
+
+              }
       }
+
+      
+/*===================Water level reading and manipulation==============*/
+ void waterLevel(){
+int level = readSensor();
+Serial.print(level);
+  if (level == 0) {
+    Serial.println("Water Level: Empty");
+    sendSms8();
+  }
+  else if (level > 0 && level <= lowerThreshold) {
+    Serial.println("Water Level: Low");
+    sendSms8();
+    
+  }
+  else if (level > lowerThreshold && level <= upperThreshold) {
+    Serial.println("Water Level: Medium");
+
+  }
+  else if (level > upperThreshold) {
+    Serial.println("Water Level: High");
+    
+  }
+        }
+        
+ int readSensor() {
+   byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+  // retrieve data from DS3231
+  readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month,
+  &year);
+  if(minute ==1 ||minute == 30){
+  digitalWrite(sensorPower, HIGH);
+  val = analogRead(sensorPin);
+  digitalWrite(sensorPower, LOW);
+  
+  } else{}
+  return val;
+}
+
+/*=====================================GSM recieving and executing SMS=====================*/
+void gsmCommands(){
+  if (Serial1.available()>0){
+  message = Serial1.readString();
+  }
+
+  if(message.indexOf("HEATER ON") > -1){
+     /*tURNING ON HEATER 1 AND 2 AND THEIR RESPECTIVE LEDs*/
+      digitalWrite(A2,LOW);
+      digitalWrite(A1,LOW);
+      digitalWrite(2,LOW);
+      digitalWrite(5,LOW);
+     sendSms11(); //notification sms
+     }
+    else if(message.indexOf("HEATER OFF") > -1){
+       /*tURNING ON HEATER 1 AND 2 AND THEIR RESPECTIVE LEDs*/
+      digitalWrite(A2,LOW);
+      digitalWrite(A1,LOW);
+      digitalWrite(2,HIGH);
+      digitalWrite(5,HIGH);
+      sendSms12(); //notification sms
+
+  }
+
+      else if(message.indexOf("DELETE") > -1){
+      DeleteAllMessages();
+      sendSms14(); //notification sms
+
+  }
+
+     else if(message.indexOf("TURNER ON") > -1){
+
+      digitalWrite(42,LOW);
+      digitalWrite(A4,HIGH);
+      sendSms13();
+      
+
+  }
+       else if(message.indexOf("TURNER OFF") > -1){
+
+      digitalWrite(42,HIGH);
+      digitalWrite(A4,LOW);
+      sendSms16();//Notification sms
+
+  }
+
+       else if(message.indexOf("TURNEL ON") > -1){
+
+      digitalWrite(A3,HIGH);
+      digitalWrite(46,LOW);
+      sendSms17();////notification sms
+      
+  }
+      else if(message.indexOf("TURNEL OFF") > -1){
+
+      digitalWrite(A3,LOW);
+      digitalWrite(46,HIGH);
+      sendSms18();//notification sms
+
+  }
+
+
+      else if(message.indexOf("DEFAULT ST") > -1){
+      sendSms21();
+      defaultConfig();
+
+  }
+      else if(message.indexOf("EXHAUSE ON") > -1){
+
+      digitalWrite(48,LOW);
+      digitalWrite(40,HIGH);
+      sendSms19(); // nitification sms
+      
+
+  }
+      else if(message.indexOf("EXHAUSE OFF") > -1){
+      digitalWrite(48,LOW);
+      digitalWrite(40,HIGH);
+      sendSms20();  // nitification 
+      
+
+  }
+  delay(10);
+ 
+  }
+
+/*============================Reading water level every 30 minutes =========================*/
+   void autoReadWater(){
+   byte second, minute, hour, dayOfWeek, dayOfMonth, month, year;
+  // retrieve data from DS3231
+  readDS3231time(&second, &minute, &hour, &dayOfWeek, &dayOfMonth, &month,
+  &year);
+  if(minute ==1 ||minute == 30){
+  digitalWrite(sensorPower, HIGH);
+  val = analogRead(sensorPin);
+  digitalWrite(sensorPower, LOW);
+  
+  } else{}
+  return val;
+}
+
+
+
+void sendSms1(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(500);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(500);
+  Serial1.println("Temperature is extremely high. Please ensure the exhaust fan is working properly.");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(500);
+
+
+}
+  void sendSms2(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(500);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(500);
+  Serial1.println("Temperature is too low. Please make sure heaters are working properly.");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  
+  }
+
+    void sendSms3(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(500);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(500);
+  Serial1.println("Humidity is too high, please make sure there are enough ventilation holes and heaters are working properly.");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(500);
+  
+  }
+
+    void sendSms4(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(500);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(500);
+  Serial1.println("Humidity is too low. Please make sure there is enough water and humidifier is working properly.");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(500);
+  
+  }
+
+    void sendSms5(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(500);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(500);
+  Serial1.println("Turner is not working. Please inspect the motor and its connections.");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(500);
+  while(1);
+  }
+
+    void sendSms6(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(500);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(500);
+  Serial1.println("Circulation fan is not working, please inspect the fan and if the switch is on.");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  
+  }
+    void sendSms7(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("7. Exhaust fan has stopped working, please inspect the fan and its connections.");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(500);
+  
+  }
+
+    void sendSms8(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(500);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Water level is too low, please add more water.");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(500);
+  
+  }
+
+    void sendSms9(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Current controller configuration settings A. Min temperature: ");// The SMS text you want to send
+
+  }
+
+    void help(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("1.DELETE: Delete all messages from GSM 2.HEATER ON: Turning on Heater 3.HEATER OFF: Turning off heaters 4.WET ON: Turning humidifier on 5.WET OFF");
+
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+ delay(1000);
+
+  }
+
+  void DeleteAllMessages()
+{
+   Serial.println("Setting the GSM in text mode");
+   Serial1.println("AT+CMGF=1\r");
+   Serial1.println("AT+CMGDA=\"DEL ALL\"\r");
+   delay(1000);
+
+}
+
+
+/*========Waiting function to assist gsm not to send multiple messages at the same time=======*/
+  void waitFunction(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  while(1);
+  }
+
+    void sendSms11(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Heaters are turned on");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  }
+
+    void sendSms12(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("heaters are turned OFF");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  }
+
+    void sendSms13(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Turner R is turned ON");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  }
+
+    void sendSms14(){
+   Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Messages have been deleted successfully");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  }
+
+  void noSensorSMS(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Temperature sensor is not well connected");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+    }
+    void sendSms16(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Turn R is Turned OFF");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+      }
+
+  void sendSms17(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Turn L is Turned ON");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+    }
+
+ void sendSms18(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Turn L is Turned OFF");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  }
+
+   void sendSms19(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Exhause fun is turned ON");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  }
+
+   void sendSms20(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Exhause fun is turned OFF");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  }
+
+     void sendSms21(){
+  Serial1.println("AT+CMGF=1"); //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  Serial1.println("AT+CMGS=\"+265881533682\"\r"); // Replace x with mobile number
+  delay(1000);
+  Serial1.println("Default configuration are set successfully");// The SMS text you want to send
+  delay(100);
+  Serial1.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  }
+
+
+  void defaultConfig(){
+  EEPROM.update(1,35);
+  EEPROM.update(3,37);
+  EEPROM.update(5,60);
+  EEPROM.update(7,80);
+  }
